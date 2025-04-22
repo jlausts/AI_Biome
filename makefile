@@ -1,8 +1,8 @@
 # Name of the output binary
-TARGET = propagate
+TARGET = main
 
 # Source files
-SRC = propagate.c
+SRC = main.c
 UTILS = $(wildcard utils/*.c)
 ALL_SRC = $(SRC) $(UTILS)
 
@@ -18,7 +18,7 @@ WARNINGS = -Wall -Werror -Wpedantic -Wextra -Wunused -Wuninitialized -Wshadow \
            -Wstrict-aliasing -Wswitch-default -Werror=return-type \
            -Werror=uninitialized -Werror=sign-compare -Wunused-function
 
-OPTIMIZE = -O3 -funroll-loops -finline-functions -march=native -fpeel-loops
+OPTIMIZE = -O3 -funroll-loops -finline-functions -march=native -fpeel-loops #-mavx2
 
 CXXFLAGS = $(WARNINGS) $(OPTIMIZE)
 

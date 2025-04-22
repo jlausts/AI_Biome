@@ -1,11 +1,12 @@
 #include <time.h>
 #include <fenv.h>
+#include <stdio.h>
 #include <omp.h>
 #include <math.h>
 #include <float.h>
 #include <errno.h>
 #include <ctype.h>
-#include <stdio.h>
+#include <stdarg.h>
 #include <dirent.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -31,11 +32,143 @@
 
 
 
+
+#define COLOR_RESET  "\033[0m"          // Reset to default terminal color
+
+// Meta and label text
+#define COLOR_FILE    "\033[38;5;125m"  // File & line info (rose)
+#define COLOR_LABEL   "\033[38;5;39m"   // Labels in format strings (bright blue)
+
+// String values
+#define COLOR_STR     "\033[38;5;129m"  // Strings (purple)
+
+// Float values
+#define COLOR_FLOAT_POS "\033[38;5;77m"   // Positive float (green-cyan)
+#define COLOR_FLOAT_NEG "\033[38;5;196m"  // Negative float (red)
+
+// Int values
+#define COLOR_INT_POS   "\033[38;5;34m"   // Positive int (vibrant green)
+#define COLOR_INT_NEG   "\033[38;5;160m"  // Negative int (red)
+
+// Symbols
+#define COLOR_EQ      "\033[38;5;214m"  // Equals sign (=) (golden)
+#define COLOR_SYM     "\033[38;5;245m"  // General punctuation like : ,
+
+// Brackets (unique for each)
+#define COLOR_PARENS  "\033[38;5;33m"   // () (blue)
+#define COLOR_BRACKS  "\033[38;5;69m"   // [] (light cyan)
+#define COLOR_BRACES  "\033[38;5;99m"   // {} (violet)
+
+void color_printf(const char *file, int line, const char *fmt, ...)
+{
+    printf(COLOR_FILE "%s:%d  " COLOR_RESET, file, line);
+
+    va_list args;
+    va_start(args, fmt);
+
+    const char *p = fmt;
+
+    while (*p)
+    {
+        if (*p == '%' && *(p + 1)) {
+            //putchar(' '); // optional spacer
+            ++p;
+
+            // Copy format specifier flags like %.4f, %-10d, etc.
+            char format[32] = "%";
+            int fi = 1;
+
+            while (strchr("-.+0123456789l", *p) && fi < 30)
+                format[fi++] = *p++;
+
+            format[fi++] = *p;
+            format[fi] = '\0';
+
+            switch (*p) {
+                case 'd':
+                case 'i': {
+                    int val = va_arg(args, int);
+                    if (val >= 0) {
+                        printf(COLOR_INT_POS); printf(format, val);
+                    } else {
+                        printf(COLOR_INT_NEG); printf(format, val);
+                    }
+                    printf(COLOR_RESET);
+                    break;
+                }
+                case 'f':
+                case 'e':
+                case 'g': {
+                    double val = va_arg(args, double);
+                    if (val >= 0) {
+                        printf(COLOR_FLOAT_POS); printf(format, val);
+                    } else {
+                        printf(COLOR_FLOAT_NEG); printf(format, val);
+                    }
+                    printf(COLOR_RESET);
+                    break;
+                }
+                case 's':
+                case 'p':
+                    printf(COLOR_STR);
+                    printf(format, va_arg(args, const char *));
+                    printf(COLOR_RESET);
+                    break;
+
+                case '%':
+                    putchar('%');
+                    break;
+
+                default:
+                    printf("%%");
+                    printf("%c", *p);
+            }
+            ++p;
+        }
+        else {
+            switch (*p) {
+                case '=':
+                    printf(COLOR_EQ "=%s", COLOR_RESET);
+                    break;
+                case ',':
+                case ':':
+                    printf(COLOR_SYM "%c" COLOR_RESET, *p);
+                    break;
+                case '(': case ')':
+                    printf(COLOR_PARENS "%c" COLOR_RESET, *p);
+                    break;
+                case '[': case ']':
+                    printf(COLOR_BRACKS "%c" COLOR_RESET, *p);
+                    break;
+                case '{': case '}':
+                    printf(COLOR_BRACES "%c" COLOR_RESET, *p);
+                    break;
+                default:
+                    printf(COLOR_LABEL "%c" COLOR_RESET, *p);
+                    break;
+            }
+            ++p;
+        }
+        
+    }
+
+    printf("\n");
+    va_end(args);
+}
+
+#define PR(fmt, ...) \
+    color_printf(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
+
+
+
+
+
 #define BREAK_PROGRAM __asm__("int $0x3")
 
 #define PRINFO(format, ...) printf("%s:%d %s:  " format "\n", __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__);
 
-#define PR(format, ...) printf("%s:%d   " format "\n", __FILE__, __LINE__, __VA_ARGS__);
+// #define PR(format, ...) printf("%s:%d   " format "\n", __FILE__, __LINE__, __VA_ARGS__);
+
 
 #define PR1(value) PR("%f", value)
 #define PR2(value1, value2) PR("%f %f", value1, value2)
