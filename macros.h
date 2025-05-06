@@ -59,6 +59,7 @@
 #define COLOR_BRACKS  "\033[38;5;69m"   // [] (light cyan)
 #define COLOR_BRACES  "\033[38;5;99m"   // {} (violet)
 
+
 void color_printf(const char *file, int line, const char *fmt, ...)
 {
     printf(COLOR_FILE "%s:%d  " COLOR_RESET, file, line);
